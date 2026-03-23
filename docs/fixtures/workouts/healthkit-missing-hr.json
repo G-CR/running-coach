@@ -1,0 +1,26 @@
+{
+  "user_id": "00000000-0000-0000-0000-000000000000",
+  "source": "healthkit",
+  "source_workout_id": "hk-missing-hr-001",
+  "started_at": "2026-03-28T06:30:00Z",
+  "ended_at": "2026-03-28T07:06:00Z",
+  "duration_sec": 2160,
+  "distance_m": 6000,
+  "avg_heart_rate": null,
+  "max_heart_rate": null,
+  "avg_cadence": 169,
+  "is_outdoor": true,
+  "has_route": true,
+  "laps": [
+    {"lap_index": 1, "distance_m": 2000, "duration_sec": 732, "avg_pace_sec_per_km": 366, "avg_heart_rate": null, "avg_cadence": 168},
+    {"lap_index": 2, "distance_m": 2000, "duration_sec": 720, "avg_pace_sec_per_km": 360, "avg_heart_rate": null, "avg_cadence": 169},
+    {"lap_index": 3, "distance_m": 2000, "duration_sec": 708, "avg_pace_sec_per_km": 354, "avg_heart_rate": null, "avg_cadence": 170}
+  ],
+  "distributions": [
+    {"distribution_type": "pace_distribution", "bucket_key": "steady", "duration_sec": 2160, "distance_m": 6000, "percentage": 100}
+  ],
+  "raw_payload": {
+    "device": "Apple Watch",
+    "workout_type": "steady_run"
+  }
+}

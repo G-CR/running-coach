@@ -15,3 +15,9 @@ Monorepo for the AI running coach MVP.
 - `make test-api`
 - `make test-domain`
 - `make ios-generate`
+
+## Runbooks
+
+- `docs/runbooks/local-dev.md`: local API / worker / iOS verification flow
+- `docs/runbooks/reanalysis.md`: replay and reanalysis checklist
+- `docs/fixtures/workouts/README.md`: golden workout fixtures used by tests
