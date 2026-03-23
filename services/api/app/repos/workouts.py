@@ -3,7 +3,15 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
 
-from app.db.models import AnalysisJobModel, WorkoutDistributionModel, WorkoutLapModel, WorkoutRawModel, WorkoutSessionModel
+from app.db.models import (
+    AnalysisJobModel,
+    AnalysisSnapshotModel,
+    WorkoutDerivedFeatureModel,
+    WorkoutDistributionModel,
+    WorkoutLapModel,
+    WorkoutRawModel,
+    WorkoutSessionModel,
+)
 from app.repos.goals import ensure_user
 
 
@@ -21,6 +29,15 @@ def get_workout_by_id(session: Session, user_id: UUID, workout_id: UUID) -> Work
 
 def list_workouts(session: Session, user_id: UUID) -> list[WorkoutSessionModel]:
     return session.query(WorkoutSessionModel).filter_by(user_id=user_id).order_by(WorkoutSessionModel.started_at.desc()).all()
+
+
+def get_latest_workout(session: Session, user_id: UUID) -> WorkoutSessionModel | None:
+    return (
+        session.query(WorkoutSessionModel)
+        .filter_by(user_id=user_id)
+        .order_by(WorkoutSessionModel.started_at.desc())
+        .first()
+    )
 
 
 def create_workout_raw(
@@ -117,3 +134,25 @@ def get_workout_distributions(session: Session, workout_id: UUID) -> dict[str, l
     for item in session.query(WorkoutDistributionModel).filter_by(workout_session_id=workout_id).all():
         grouped[item.distribution_type].append(item)
     return dict(grouped)
+
+
+def get_latest_analysis_snapshot(session: Session, workout_id: UUID) -> AnalysisSnapshotModel | None:
+    return (
+        session.query(AnalysisSnapshotModel)
+        .filter_by(workout_session_id=workout_id)
+        .order_by(AnalysisSnapshotModel.version.desc(), AnalysisSnapshotModel.created_at.desc())
+        .first()
+    )
+
+
+def get_derived_features(session: Session, workout_id: UUID) -> list[WorkoutDerivedFeatureModel]:
+    return session.query(WorkoutDerivedFeatureModel).filter_by(workout_session_id=workout_id).all()
+
+
+def count_pending_analysis_jobs(session: Session, user_id: UUID) -> int:
+    return (
+        session.query(AnalysisJobModel)
+        .filter(AnalysisJobModel.user_id == user_id)
+        .filter(AnalysisJobModel.status.in_(["queued", "running", "needs_retry"]))
+        .count()
+    )

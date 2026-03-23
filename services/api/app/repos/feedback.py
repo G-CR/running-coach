@@ -32,3 +32,14 @@ def replace_feedback_tags(session: Session, feedback_id: UUID, tag_ids: list[UUI
     for tag_id in tag_ids:
         session.add(PostWorkoutFeedbackTagLinkModel(feedback_id=feedback_id, tag_id=tag_id))
     session.flush()
+
+
+def get_feedback_tag_names(session: Session, feedback_id: UUID) -> list[str]:
+    rows = (
+        session.query(FeedbackTagModel.display_name)
+        .join(PostWorkoutFeedbackTagLinkModel, FeedbackTagModel.id == PostWorkoutFeedbackTagLinkModel.tag_id)
+        .filter(PostWorkoutFeedbackTagLinkModel.feedback_id == feedback_id)
+        .order_by(FeedbackTagModel.sort_order.asc())
+        .all()
+    )
+    return [row[0] for row in rows]
