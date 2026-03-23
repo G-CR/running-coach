@@ -38,11 +38,12 @@ final class AppContainer: ObservableObject {
     }
 
     static func live(baseURL: URL = URL(string: "http://localhost:8000")!) -> AppContainer {
-        let authSession = InMemoryAuthSession()
-        let apiClient = APIClient(baseURL: baseURL, authSession: authSession)
+        let resolvedBaseURL = AppRuntimeConfiguration.resolveAPIBaseURL()
+        let authSession = InMemoryAuthSession(accessToken: LocalDevelopmentIdentity.bearerToken())
+        let apiClient = APIClient(baseURL: resolvedBaseURL, authSession: authSession)
         let queueStore = InMemorySyncQueueStore()
         let authorizationService = HealthKitAuthorizationService()
-        let workoutReader = HealthKitWorkoutReader(source: EmptyHealthKitWorkoutSource())
+        let workoutReader = HealthKitWorkoutReader(source: LiveHealthKitWorkoutSource())
         let syncCoordinator = WorkoutSyncCoordinator(apiClient: apiClient, queueStore: queueStore)
         let store = DemoAppStore.demo()
         return AppContainer(
@@ -59,6 +60,10 @@ final class AppContainer: ObservableObject {
         )
     }
 
+    var localUserID: UUID {
+        LocalDevelopmentIdentity.userID()
+    }
+
     var authorizationStatusModel: AuthorizationStatusModel {
         let state = authorizationService.currentStatus()
         return AuthorizationStatusModel(
@@ -66,12 +71,5 @@ final class AppContainer: ObservableObject {
             detail: state.description,
             isAuthorized: state == .authorized
         )
-    }
-}
-
-private struct EmptyHealthKitWorkoutSource: HealthKitWorkoutSource {
-    func readWorkouts(since anchor: Date?) async throws -> [HealthKitWorkoutRecord] {
-        _ = anchor
-        return []
     }
 }

@@ -1,5 +1,9 @@
 import Foundation
 
+protocol WorkoutSyncCoordinating: Sendable {
+    func sync(workout: WorkoutImportPayload) async throws
+}
+
 final class WorkoutSyncCoordinator: @unchecked Sendable {
     private let apiClient: APIClientProtocol
     private let queueStore: SyncQueueStoring
@@ -34,3 +38,5 @@ final class WorkoutSyncCoordinator: @unchecked Sendable {
         await queueStore.replace(with: remainingItems)
     }
 }
+
+extension WorkoutSyncCoordinator: WorkoutSyncCoordinating {}

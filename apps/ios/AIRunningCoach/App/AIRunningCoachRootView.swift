@@ -47,7 +47,10 @@ struct AIRunningCoachRootView: View {
                 GoalSettingsView(
                     viewModel: GoalSettingsViewModel(
                         goalService: container.goalService,
-                        authorizationStatusModel: container.authorizationStatusModel
+                        authorizationService: container.authorizationService,
+                        workoutReader: container.workoutReader,
+                        syncCoordinator: container.syncCoordinator,
+                        userID: container.localUserID
                     )
                 )
             }

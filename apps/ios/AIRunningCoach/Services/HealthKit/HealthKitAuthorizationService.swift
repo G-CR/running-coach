@@ -27,26 +27,21 @@ protocol HealthKitAuthorizationProviding: Sendable {
 }
 
 final class HealthKitAuthorizationService: HealthKitAuthorizationProviding, @unchecked Sendable {
-    private let healthStore: HKHealthStore
+    private static let authorizationFlagKey = "healthkit_read_authorized"
 
-    init(healthStore: HKHealthStore = HKHealthStore()) {
+    private let healthStore: HKHealthStore
+    private let userDefaults: UserDefaults
+
+    init(healthStore: HKHealthStore = HKHealthStore(), userDefaults: UserDefaults = .standard) {
         self.healthStore = healthStore
+        self.userDefaults = userDefaults
     }
 
     func currentStatus() -> HealthKitAuthorizationState {
         guard HKHealthStore.isHealthDataAvailable() else {
             return .unavailable
         }
-        let workoutType = HKObjectType.workoutType()
-        let status = healthStore.authorizationStatus(for: workoutType)
-        switch status {
-        case .sharingAuthorized:
-            return .authorized
-        case .notDetermined, .sharingDenied:
-            return .pending
-        @unknown default:
-            return .unknown
-        }
+        return userDefaults.bool(forKey: Self.authorizationFlagKey) ? .authorized : .pending
     }
 
     func requestAuthorization() async throws -> HealthKitAuthorizationState {
@@ -54,17 +49,29 @@ final class HealthKitAuthorizationService: HealthKitAuthorizationProviding, @unc
             return .unavailable
         }
 
-        let workoutType = HKObjectType.workoutType()
         return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<HealthKitAuthorizationState, Error>) in
-            healthStore.requestAuthorization(toShare: [], read: [workoutType]) { success, error in
+            healthStore.requestAuthorization(toShare: [], read: readTypes()) { success, error in
                 if let error {
                     continuation.resume(throwing: error)
                 } else if success {
+                    self.userDefaults.set(true, forKey: Self.authorizationFlagKey)
                     continuation.resume(returning: .authorized)
                 } else {
+                    self.userDefaults.removeObject(forKey: Self.authorizationFlagKey)
                     continuation.resume(returning: .pending)
                 }
             }
         }
+    }
+
+    private func readTypes() -> Set<HKObjectType> {
+        var types: Set<HKObjectType> = [HKObjectType.workoutType()]
+        if let heartRate = HKObjectType.quantityType(forIdentifier: .heartRate) {
+            types.insert(heartRate)
+        }
+        if let stepCount = HKObjectType.quantityType(forIdentifier: .stepCount) {
+            types.insert(stepCount)
+        }
+        return types
     }
 }

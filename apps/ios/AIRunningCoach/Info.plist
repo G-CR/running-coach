@@ -18,5 +18,16 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>AIRunningCoachAPIBaseURL</key>
+	<string>http://127.0.0.1:8000</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSHealthShareUsageDescription</key>
+	<string>AI Running Coach 需要读取你的跑步训练数据，用于同步训练、生成赛后分析和下一练建议。</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>AI Running Coach 会预留训练写入能力，便于后续扩展训练记录联动。</string>
 </dict>
 </plist>

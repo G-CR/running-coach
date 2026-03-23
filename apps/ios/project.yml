@@ -13,6 +13,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.airunningcoach
         SWIFT_VERSION: 5.10
         INFOPLIST_FILE: AIRunningCoach/Info.plist
+        CODE_SIGN_ENTITLEMENTS: AIRunningCoach/AIRunningCoach.entitlements
   AIRunningCoachTests:
     type: bundle.unit-test
     platform: iOS

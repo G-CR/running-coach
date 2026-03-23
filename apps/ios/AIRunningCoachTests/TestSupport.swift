@@ -100,6 +100,67 @@ final class FeedbackServiceSpy: WorkoutServing {
     }
 }
 
+@MainActor
+final class GoalServiceStub: GoalServing {
+    var goal: GoalSettingsData
+    private(set) var updatedGoal: GoalSettingsData?
+
+    init(goal: GoalSettingsData = .fixture()) {
+        self.goal = goal
+    }
+
+    func fetchGoal() async -> GoalSettingsData {
+        goal
+    }
+
+    func updateGoal(_ goal: GoalSettingsData) async {
+        updatedGoal = goal
+        self.goal = goal
+    }
+}
+
+final class HealthKitAuthorizationServiceStub: HealthKitAuthorizationProviding, @unchecked Sendable {
+    var currentStatusValue: HealthKitAuthorizationState
+    var requestResult: Result<HealthKitAuthorizationState, Error>
+    private(set) var requestCallCount = 0
+
+    init(
+        currentStatusValue: HealthKitAuthorizationState = .pending,
+        requestResult: Result<HealthKitAuthorizationState, Error> = .success(.authorized)
+    ) {
+        self.currentStatusValue = currentStatusValue
+        self.requestResult = requestResult
+    }
+
+    func currentStatus() -> HealthKitAuthorizationState {
+        currentStatusValue
+    }
+
+    func requestAuthorization() async throws -> HealthKitAuthorizationState {
+        requestCallCount += 1
+        let value = try requestResult.get()
+        currentStatusValue = value
+        return value
+    }
+}
+
+struct WorkoutImportReaderStub: WorkoutImportReading {
+    let result: Result<[WorkoutImportPayload], Error>
+
+    func readWorkouts(userID: UUID) async throws -> [WorkoutImportPayload] {
+        _ = userID
+        return try result.get()
+    }
+}
+
+final class WorkoutSyncCoordinatorSpy: WorkoutSyncCoordinating, @unchecked Sendable {
+    private(set) var syncedWorkouts: [WorkoutImportPayload] = []
+
+    func sync(workout: WorkoutImportPayload) async throws {
+        syncedWorkouts.append(workout)
+    }
+}
+
 extension WorkoutImportPayload {
     static func fixture(userID: UUID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!) -> WorkoutImportPayload {
         WorkoutImportPayload(
@@ -135,6 +196,19 @@ extension WorkoutImportPayload {
                 )
             ],
             rawPayload: ["device": "Apple Watch"]
+        )
+    }
+}
+
+extension GoalSettingsData {
+    static func fixture() -> GoalSettingsData {
+        GoalSettingsData(
+            goalType: "10K Improvement",
+            targetText: "50:00 target time",
+            weeklyRunDays: 4,
+            healthKitStatus: "HealthKit 尚未授权",
+            syncStatus: "尚未同步",
+            aiPermissionEnabled: true
         )
     }
 }
