@@ -1,3 +1,3 @@
-from .schemas import UserContext
+from .schemas import UserContext, WorkoutImportPayload
 
-__all__ = ["UserContext"]
+__all__ = ["UserContext", "WorkoutImportPayload"]
