@@ -2,9 +2,11 @@ import SwiftUI
 
 @main
 struct AIRunningCoachApp: App {
+    private let container = AppContainer.live()
+
     var body: some Scene {
         WindowGroup {
-            Text("AI Running Coach")
+            AuthorizationStatusView(status: container.authorizationStatusModel)
         }
     }
 }

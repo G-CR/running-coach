@@ -13,3 +13,15 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.airunningcoach
         SWIFT_VERSION: 5.10
         INFOPLIST_FILE: AIRunningCoach/Info.plist
+  AIRunningCoachTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - AIRunningCoachTests
+    dependencies:
+      - target: AIRunningCoach
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.airunningcoach.tests
+        SWIFT_VERSION: 5.10
+        GENERATE_INFOPLIST_FILE: YES
