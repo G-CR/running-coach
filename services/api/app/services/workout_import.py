@@ -6,13 +6,13 @@ from sqlalchemy.orm import Session
 from domain.schemas import WorkoutImportPayload
 
 from app.repos.workouts import (
-    create_analysis_job,
     create_workout_distributions,
     create_workout_laps,
     create_workout_raw,
     create_workout_session,
     get_workout_by_source_key,
 )
+from app.services.jobs import enqueue_analysis_job
 
 
 class WorkoutImportResult(BaseModel):
@@ -37,13 +37,13 @@ def import_workout(session: Session, user_id: UUID, payload: WorkoutImportPayloa
     workout = create_workout_session(session, user_id, payload)
     create_workout_laps(session, workout.id, payload.laps)
     create_workout_distributions(session, workout.id, payload.distributions)
-    import_job = create_analysis_job(session, user_id, workout.id, "import")
-    analysis_job = create_analysis_job(session, user_id, workout.id, "analyze")
+    import_job_id = enqueue_analysis_job(session, user_id, workout.id, "import")
+    analysis_job_id = enqueue_analysis_job(session, user_id, workout.id, "analyze")
     session.commit()
 
     return WorkoutImportResult(
         workout_id=str(workout.id),
         deduplicated=False,
-        import_job_id=str(import_job.id),
-        analysis_job_id=str(analysis_job.id),
+        import_job_id=import_job_id,
+        analysis_job_id=analysis_job_id,
     )

@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from app.api.routes.feedback import router as feedback_router
 from app.api.routes.goals import router as goals_router
 from app.api.routes.workouts import router as workouts_router
 
@@ -13,3 +14,4 @@ def health() -> dict[str, str]:
 
 app.include_router(goals_router)
 app.include_router(workouts_router)
+app.include_router(feedback_router)

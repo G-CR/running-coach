@@ -57,4 +57,4 @@ def healthkit_payload(user_id: str) -> dict:
 def imported_workout(client: TestClient, auth_headers: dict[str, str], healthkit_payload: dict) -> SimpleNamespace:
     response = client.post("/v1/workouts/import", json=healthkit_payload, headers=auth_headers)
     body = response.json()
-    return SimpleNamespace(id=body["workout_id"])
+    return SimpleNamespace(id=body["workout_id"], user_id=healthkit_payload["user_id"])
