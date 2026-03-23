@@ -8,6 +8,10 @@ final class AppContainer: ObservableObject {
     let authorizationService: HealthKitAuthorizationService
     let workoutReader: HealthKitWorkoutReader
     let syncCoordinator: WorkoutSyncCoordinator
+    let homeService: HomeServing
+    let workoutService: WorkoutServing
+    let planService: PlanServing
+    let goalService: GoalServing
 
     init(
         authSession: InMemoryAuthSession,
@@ -15,7 +19,11 @@ final class AppContainer: ObservableObject {
         queueStore: InMemorySyncQueueStore,
         authorizationService: HealthKitAuthorizationService,
         workoutReader: HealthKitWorkoutReader,
-        syncCoordinator: WorkoutSyncCoordinator
+        syncCoordinator: WorkoutSyncCoordinator,
+        homeService: HomeServing,
+        workoutService: WorkoutServing,
+        planService: PlanServing,
+        goalService: GoalServing
     ) {
         self.authSession = authSession
         self.apiClient = apiClient
@@ -23,6 +31,10 @@ final class AppContainer: ObservableObject {
         self.authorizationService = authorizationService
         self.workoutReader = workoutReader
         self.syncCoordinator = syncCoordinator
+        self.homeService = homeService
+        self.workoutService = workoutService
+        self.planService = planService
+        self.goalService = goalService
     }
 
     static func live(baseURL: URL = URL(string: "http://localhost:8000")!) -> AppContainer {
@@ -32,13 +44,18 @@ final class AppContainer: ObservableObject {
         let authorizationService = HealthKitAuthorizationService()
         let workoutReader = HealthKitWorkoutReader(source: EmptyHealthKitWorkoutSource())
         let syncCoordinator = WorkoutSyncCoordinator(apiClient: apiClient, queueStore: queueStore)
+        let store = DemoAppStore.demo()
         return AppContainer(
             authSession: authSession,
             apiClient: apiClient,
             queueStore: queueStore,
             authorizationService: authorizationService,
             workoutReader: workoutReader,
-            syncCoordinator: syncCoordinator
+            syncCoordinator: syncCoordinator,
+            homeService: DemoHomeService(store: store),
+            workoutService: DemoWorkoutService(store: store),
+            planService: DemoPlanService(store: store),
+            goalService: DemoGoalService(store: store)
         )
     }
 

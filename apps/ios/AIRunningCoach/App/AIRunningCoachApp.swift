@@ -6,7 +6,7 @@ struct AIRunningCoachApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AuthorizationStatusView(status: container.authorizationStatusModel)
+            AIRunningCoachRootView(container: container)
         }
     }
 }

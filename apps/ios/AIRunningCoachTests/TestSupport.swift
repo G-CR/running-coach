@@ -53,6 +53,53 @@ struct HealthKitWorkoutSourceStub: HealthKitWorkoutSource {
     }
 }
 
+@MainActor
+final class HomeServiceStub: HomeServing {
+    let response: HomeScreenData
+
+    init(response: HomeScreenData) {
+        self.response = response
+    }
+
+    func fetchHome() async -> HomeScreenData {
+        response
+    }
+}
+
+@MainActor
+final class PlanServiceStub: PlanServing {
+    let response: PlanScreenData
+
+    init(response: PlanScreenData) {
+        self.response = response
+    }
+
+    func fetchPlan(days: Int) async -> PlanScreenData {
+        let items = Array(response.items.prefix(days))
+        return PlanScreenData(windowTitle: response.windowTitle, version: response.version, items: items)
+    }
+}
+
+@MainActor
+final class FeedbackServiceSpy: WorkoutServing {
+    private(set) var didSubmit = false
+
+    func fetchWorkouts() async -> [WorkoutListItemData] {
+        []
+    }
+
+    func fetchWorkoutDetail(id: UUID) async -> WorkoutDetailData? {
+        _ = id
+        return nil
+    }
+
+    func submitFeedback(workoutID: UUID, draft: FeedbackDraft) async {
+        _ = workoutID
+        _ = draft
+        didSubmit = true
+    }
+}
+
 extension WorkoutImportPayload {
     static func fixture(userID: UUID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!) -> WorkoutImportPayload {
         WorkoutImportPayload(

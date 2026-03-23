@@ -25,3 +25,15 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.airunningcoach.tests
         SWIFT_VERSION: 5.10
         GENERATE_INFOPLIST_FILE: YES
+  AIRunningCoachUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - AIRunningCoachUITests
+    dependencies:
+      - target: AIRunningCoach
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.airunningcoach.uitests
+        SWIFT_VERSION: 5.10
+        GENERATE_INFOPLIST_FILE: YES
