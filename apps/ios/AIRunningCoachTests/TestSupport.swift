@@ -144,6 +144,41 @@ final class HealthKitAuthorizationServiceStub: HealthKitAuthorizationProviding, 
     }
 }
 
+final class AppRuntimeConfigurationServiceStub: AppRuntimeConfigurationServing, @unchecked Sendable {
+    var resolvedURL: URL
+    var saveResult: Result<URL, Error>
+    var resetURL: URL
+    private(set) var savedValues: [String] = []
+    private(set) var resetCallCount = 0
+
+    init(
+        resolvedURL: URL = URL(string: "http://127.0.0.1:8000")!,
+        saveResult: Result<URL, Error> = .success(URL(string: "http://127.0.0.1:8000")!),
+        resetURL: URL = URL(string: "http://127.0.0.1:8000")!
+    ) {
+        self.resolvedURL = resolvedURL
+        self.saveResult = saveResult
+        self.resetURL = resetURL
+    }
+
+    func resolveAPIBaseURL() -> URL {
+        resolvedURL
+    }
+
+    func saveAPIBaseURLOverride(_ rawValue: String) throws -> URL {
+        savedValues.append(rawValue)
+        let url = try saveResult.get()
+        resolvedURL = url
+        return url
+    }
+
+    func resetAPIBaseURLOverride() -> URL {
+        resetCallCount += 1
+        resolvedURL = resetURL
+        return resetURL
+    }
+}
+
 struct WorkoutImportReaderStub: WorkoutImportReading {
     let result: Result<[WorkoutImportPayload], Error>
 

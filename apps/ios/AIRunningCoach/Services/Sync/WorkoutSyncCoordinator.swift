@@ -5,17 +5,25 @@ protocol WorkoutSyncCoordinating: Sendable {
 }
 
 final class WorkoutSyncCoordinator: @unchecked Sendable {
-    private let apiClient: APIClientProtocol
+    private let apiClientProvider: @Sendable () -> APIClientProtocol
     private let queueStore: SyncQueueStoring
 
     init(apiClient: APIClientProtocol, queueStore: SyncQueueStoring) {
-        self.apiClient = apiClient
+        self.apiClientProvider = { apiClient }
+        self.queueStore = queueStore
+    }
+
+    init(
+        apiClientProvider: @escaping @Sendable () -> APIClientProtocol,
+        queueStore: SyncQueueStoring
+    ) {
+        self.apiClientProvider = apiClientProvider
         self.queueStore = queueStore
     }
 
     func sync(workout: WorkoutImportPayload) async throws {
         do {
-            _ = try await apiClient.importWorkout(workout)
+            _ = try await apiClientProvider().importWorkout(workout)
             await retryPending()
         } catch {
             await queueStore.enqueue(workout)
@@ -29,7 +37,7 @@ final class WorkoutSyncCoordinator: @unchecked Sendable {
 
         for workout in pendingItems {
             do {
-                _ = try await apiClient.importWorkout(workout)
+                _ = try await apiClientProvider().importWorkout(workout)
             } catch {
                 remainingItems.append(workout)
             }

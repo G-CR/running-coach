@@ -50,7 +50,8 @@ struct AIRunningCoachRootView: View {
                         authorizationService: container.authorizationService,
                         workoutReader: container.workoutReader,
                         syncCoordinator: container.syncCoordinator,
-                        userID: container.localUserID
+                        userID: container.localUserID,
+                        runtimeConfiguration: container.runtimeConfiguration
                     )
                 )
             }

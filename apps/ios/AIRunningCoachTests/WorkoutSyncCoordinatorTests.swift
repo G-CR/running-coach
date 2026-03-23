@@ -30,4 +30,24 @@ final class WorkoutSyncCoordinatorTests: XCTestCase {
         XCTAssertEqual(api.importCallCount, 1)
         XCTAssertTrue(pendingItems.isEmpty)
     }
+
+    func testSyncCoordinatorBuildsClientFromProviderOnEachSync() async throws {
+        let firstAPI = APIClientStub(result: .success(.fixture()))
+        let secondAPI = APIClientStub(result: .success(.fixture()))
+        let store = InMemorySyncQueueStore()
+        var providerCallCount = 0
+        let sut = WorkoutSyncCoordinator(
+            apiClientProvider: {
+                providerCallCount += 1
+                return providerCallCount == 1 ? firstAPI : secondAPI
+            },
+            queueStore: store
+        )
+
+        try await sut.sync(workout: .fixture())
+        try await sut.sync(workout: .fixture())
+
+        XCTAssertEqual(firstAPI.importCallCount, 1)
+        XCTAssertEqual(secondAPI.importCallCount, 1)
+    }
 }

@@ -3,8 +3,8 @@ import Foundation
 @MainActor
 final class AppContainer: ObservableObject {
     let authSession: InMemoryAuthSession
-    let apiClient: APIClient
     let queueStore: InMemorySyncQueueStore
+    let runtimeConfiguration: AppRuntimeConfigurationServing
     let authorizationService: HealthKitAuthorizationService
     let workoutReader: HealthKitWorkoutReader
     let syncCoordinator: WorkoutSyncCoordinator
@@ -15,8 +15,8 @@ final class AppContainer: ObservableObject {
 
     init(
         authSession: InMemoryAuthSession,
-        apiClient: APIClient,
         queueStore: InMemorySyncQueueStore,
+        runtimeConfiguration: AppRuntimeConfigurationServing,
         authorizationService: HealthKitAuthorizationService,
         workoutReader: HealthKitWorkoutReader,
         syncCoordinator: WorkoutSyncCoordinator,
@@ -26,8 +26,8 @@ final class AppContainer: ObservableObject {
         goalService: GoalServing
     ) {
         self.authSession = authSession
-        self.apiClient = apiClient
         self.queueStore = queueStore
+        self.runtimeConfiguration = runtimeConfiguration
         self.authorizationService = authorizationService
         self.workoutReader = workoutReader
         self.syncCoordinator = syncCoordinator
@@ -37,19 +37,26 @@ final class AppContainer: ObservableObject {
         self.goalService = goalService
     }
 
-    static func live(baseURL: URL = URL(string: "http://localhost:8000")!) -> AppContainer {
-        let resolvedBaseURL = AppRuntimeConfiguration.resolveAPIBaseURL()
+    static func live() -> AppContainer {
+        let runtimeConfiguration = LiveAppRuntimeConfigurationService()
         let authSession = InMemoryAuthSession(accessToken: LocalDevelopmentIdentity.bearerToken())
-        let apiClient = APIClient(baseURL: resolvedBaseURL, authSession: authSession)
         let queueStore = InMemorySyncQueueStore()
         let authorizationService = HealthKitAuthorizationService()
         let workoutReader = HealthKitWorkoutReader(source: LiveHealthKitWorkoutSource())
-        let syncCoordinator = WorkoutSyncCoordinator(apiClient: apiClient, queueStore: queueStore)
+        let syncCoordinator = WorkoutSyncCoordinator(
+            apiClientProvider: {
+                APIClient(
+                    baseURL: runtimeConfiguration.resolveAPIBaseURL(),
+                    authSession: authSession
+                )
+            },
+            queueStore: queueStore
+        )
         let store = DemoAppStore.demo()
         return AppContainer(
             authSession: authSession,
-            apiClient: apiClient,
             queueStore: queueStore,
+            runtimeConfiguration: runtimeConfiguration,
             authorizationService: authorizationService,
             workoutReader: workoutReader,
             syncCoordinator: syncCoordinator,

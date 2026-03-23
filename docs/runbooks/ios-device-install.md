@@ -26,9 +26,9 @@ export PYTHONPATH="$(pwd)/packages/domain/src:$(pwd)/services/api"
 curl http://127.0.0.1:8000/health
 ```
 
-## 3. 把 API 地址改成 Mac mini 的局域网 IP
+## 3. 准备 Mac mini 的局域网 API 地址
 
-iPhone 不能访问自己的 `127.0.0.1` 去命中 Mac mini，所以真机联调时要把 API 地址改成 Mac mini 的局域网 IP，例如 `http://192.168.31.20:8000`。
+iPhone 不能访问自己的 `127.0.0.1` 去命中 Mac mini，所以真机联调时要准备一个 Mac mini 的局域网 API 地址，例如 `http://192.168.31.20:8000`。
 
 先查看 Mac mini 的局域网 IP：
 
@@ -36,7 +36,9 @@ iPhone 不能访问自己的 `127.0.0.1` 去命中 Mac mini，所以真机联调
 ipconfig getifaddr en0
 ```
 
-然后修改 `apps/ios/AIRunningCoach/Info.plist` 里的 `AIRunningCoachAPIBaseURL`：
+现在推荐直接在 App 里修改 API 地址；`Info.plist` 只作为默认回退值。
+
+如果你希望改安装默认值，也可以修改 `apps/ios/AIRunningCoach/Info.plist` 里的 `AIRunningCoachAPIBaseURL`：
 
 ```xml
 <key>AIRunningCoachAPIBaseURL</key>
@@ -46,7 +48,8 @@ ipconfig getifaddr en0
 说明：
 
 - `AIR_RUNNING_COACH_API_BASE_URL` 环境变量更适合模拟器或 Xcode 本地调试。
-- 真机安装后，默认以 `Info.plist` 中的地址为准。
+- 真机安装后，App 会优先使用你在个人页手动保存的地址。
+- 如果没有手动保存地址，才会回退到 `Info.plist` 中的地址。
 
 ## 4. 配置签名与唯一 Bundle ID
 
@@ -89,7 +92,8 @@ App 启动后，进入个人页，按下面顺序操作：
 1. 点击「请求 HealthKit 授权」。
 2. 在系统弹窗中允许读取跑步与相关健康数据。
 3. 确认页面上的 API 地址是局域网地址，不是 `127.0.0.1`。
-4. 点击「同步最近跑步」。
+4. 如有需要，先把「API 地址」改成 Mac mini 的局域网地址并点「保存 API 地址」。
+5. 点击「同步最近跑步」。
 
 当前最小可用链路支持：
 

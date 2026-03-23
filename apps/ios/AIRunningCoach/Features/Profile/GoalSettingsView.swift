@@ -10,26 +10,31 @@ final class GoalSettingsViewModel: ObservableObject {
     @Published var aiPermissionEnabled = true
     @Published private(set) var isAuthorizing = false
     @Published private(set) var isSyncing = false
-    @Published private(set) var apiBaseURLText = ""
+    @Published var apiBaseURLText = ""
+    @Published private(set) var apiBaseURLStatus = ""
+    @Published private(set) var apiBaseURLHasError = false
 
     private let goalService: GoalServing
     private let authorizationService: HealthKitAuthorizationProviding
     private let workoutReader: WorkoutImportReading
     private let syncCoordinator: WorkoutSyncCoordinating
     private let userID: UUID
+    private let runtimeConfiguration: AppRuntimeConfigurationServing
 
     init(
         goalService: GoalServing,
         authorizationService: HealthKitAuthorizationProviding,
         workoutReader: WorkoutImportReading,
         syncCoordinator: WorkoutSyncCoordinating,
-        userID: UUID
+        userID: UUID,
+        runtimeConfiguration: AppRuntimeConfigurationServing
     ) {
         self.goalService = goalService
         self.authorizationService = authorizationService
         self.workoutReader = workoutReader
         self.syncCoordinator = syncCoordinator
         self.userID = userID
+        self.runtimeConfiguration = runtimeConfiguration
     }
 
     func load() async {
@@ -40,7 +45,9 @@ final class GoalSettingsViewModel: ObservableObject {
         syncStatus = data.syncStatus
         aiPermissionEnabled = data.aiPermissionEnabled
         healthKitStatus = authorizationService.currentStatus().description
-        apiBaseURLText = AppRuntimeConfiguration.resolveAPIBaseURL().absoluteString
+        apiBaseURLText = runtimeConfiguration.resolveAPIBaseURL().absoluteString
+        apiBaseURLStatus = ""
+        apiBaseURLHasError = false
     }
 
     func requestHealthKitAuthorization() async {
@@ -75,6 +82,28 @@ final class GoalSettingsViewModel: ObservableObject {
         }
     }
 
+    func saveAPIBaseURL() async {
+        do {
+            let resolvedURL = try runtimeConfiguration.saveAPIBaseURLOverride(apiBaseURLText)
+            apiBaseURLText = resolvedURL.absoluteString
+            apiBaseURLStatus = "API 地址已更新"
+            apiBaseURLHasError = false
+        } catch AppRuntimeConfigurationError.invalidAPIBaseURL {
+            apiBaseURLStatus = "请输入有效的 http(s) API 地址"
+            apiBaseURLHasError = true
+        } catch {
+            apiBaseURLStatus = "API 地址保存失败"
+            apiBaseURLHasError = true
+        }
+    }
+
+    func resetAPIBaseURL() async {
+        let resolvedURL = runtimeConfiguration.resetAPIBaseURLOverride()
+        apiBaseURLText = resolvedURL.absoluteString
+        apiBaseURLStatus = "已恢复默认 API 地址"
+        apiBaseURLHasError = false
+    }
+
     func save() async {
         await goalService.updateGoal(
             GoalSettingsData(
@@ -103,9 +132,24 @@ struct GoalSettingsView: View {
             Section("状态") {
                 Text("HealthKit：\(viewModel.healthKitStatus)")
                 Text("同步：\(viewModel.syncStatus)")
-                Text("API：\(viewModel.apiBaseURLText)")
+                TextField("http://192.168.1.20:8000", text: $viewModel.apiBaseURLText)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.URL)
+                    .autocorrectionDisabled()
+                Text("当前 API：\(viewModel.apiBaseURLText)")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                if !viewModel.apiBaseURLStatus.isEmpty {
+                    Text(viewModel.apiBaseURLStatus)
+                        .font(.footnote)
+                        .foregroundStyle(viewModel.apiBaseURLHasError ? .red : .secondary)
+                }
+                Button("保存 API 地址") {
+                    Task { await viewModel.saveAPIBaseURL() }
+                }
+                Button("恢复默认地址") {
+                    Task { await viewModel.resetAPIBaseURL() }
+                }
                 Toggle("允许 AI 分析", isOn: $viewModel.aiPermissionEnabled)
                 Button(viewModel.isAuthorizing ? "授权中..." : "请求 HealthKit 授权") {
                     Task { await viewModel.requestHealthKitAuthorization() }
