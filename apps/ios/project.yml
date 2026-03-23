@@ -1,0 +1,15 @@
+name: AIRunningCoach
+options:
+  deploymentTarget:
+    iOS: "18.0"
+targets:
+  AIRunningCoach:
+    type: application
+    platform: iOS
+    sources:
+      - AIRunningCoach
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.airunningcoach
+        SWIFT_VERSION: 5.10
+        INFOPLIST_FILE: AIRunningCoach/Info.plist
