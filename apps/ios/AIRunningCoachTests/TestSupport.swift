@@ -165,6 +165,10 @@ final class AppRuntimeConfigurationServiceStub: AppRuntimeConfigurationServing, 
         resolvedURL
     }
 
+    func validateAPIBaseURL(_ rawValue: String) throws -> URL {
+        try AppRuntimeConfiguration.validateAPIBaseURL(rawValue)
+    }
+
     func saveAPIBaseURLOverride(_ rawValue: String) throws -> URL {
         savedValues.append(rawValue)
         let url = try saveResult.get()
@@ -176,6 +180,20 @@ final class AppRuntimeConfigurationServiceStub: AppRuntimeConfigurationServing, 
         resetCallCount += 1
         resolvedURL = resetURL
         return resetURL
+    }
+}
+
+final class APIHealthCheckerStub: APIHealthChecking, @unchecked Sendable {
+    var result: Result<Void, Error>
+    private(set) var checkedURLs: [URL] = []
+
+    init(result: Result<Void, Error> = .success(())) {
+        self.result = result
+    }
+
+    func checkHealth(baseURL: URL) async throws {
+        checkedURLs.append(baseURL)
+        try result.get()
     }
 }
 

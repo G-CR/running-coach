@@ -9,8 +9,28 @@ struct AIRunningCoachRootView: View {
     }
 
     let container: AppContainer
+    @StateObject private var goalSettingsViewModel: GoalSettingsViewModel
     @State private var selectedTab: Tab = .home
     @State private var homeReloadToken = 0
+    @State private var shouldPresentSetupGuide: Bool
+
+    init(container: AppContainer) {
+        self.container = container
+        _goalSettingsViewModel = StateObject(
+            wrappedValue: GoalSettingsViewModel(
+                goalService: container.goalService,
+                authorizationService: container.authorizationService,
+                workoutReader: container.workoutReader,
+                syncCoordinator: container.syncCoordinator,
+                userID: container.localUserID,
+                runtimeConfiguration: container.runtimeConfiguration,
+                apiHealthChecker: container.apiHealthChecker
+            )
+        )
+        _shouldPresentSetupGuide = State(
+            initialValue: container.setupGuideStateService.shouldPresentGuide()
+        )
+    }
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -45,14 +65,8 @@ struct AIRunningCoachRootView: View {
 
             NavigationStack {
                 GoalSettingsView(
-                    viewModel: GoalSettingsViewModel(
-                        goalService: container.goalService,
-                        authorizationService: container.authorizationService,
-                        workoutReader: container.workoutReader,
-                        syncCoordinator: container.syncCoordinator,
-                        userID: container.localUserID,
-                        runtimeConfiguration: container.runtimeConfiguration
-                    )
+                    viewModel: goalSettingsViewModel,
+                    reopenSetupGuide: { shouldPresentSetupGuide = true }
                 )
             }
             .tabItem {
@@ -64,6 +78,15 @@ struct AIRunningCoachRootView: View {
             if newValue == .home {
                 homeReloadToken += 1
             }
+        }
+        .sheet(isPresented: $shouldPresentSetupGuide) {
+            SetupGuideView(
+                viewModel: goalSettingsViewModel,
+                closeGuide: {
+                    container.setupGuideStateService.markGuideSeen()
+                    shouldPresentSetupGuide = false
+                }
+            )
         }
     }
 }

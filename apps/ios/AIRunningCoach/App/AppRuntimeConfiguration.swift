@@ -6,6 +6,7 @@ enum AppRuntimeConfigurationError: Error, Equatable {
 
 protocol AppRuntimeConfigurationServing: Sendable {
     func resolveAPIBaseURL() -> URL
+    func validateAPIBaseURL(_ rawValue: String) throws -> URL
     func saveAPIBaseURLOverride(_ rawValue: String) throws -> URL
     func resetAPIBaseURLOverride() -> URL
 }
@@ -13,6 +14,10 @@ protocol AppRuntimeConfigurationServing: Sendable {
 struct LiveAppRuntimeConfigurationService: AppRuntimeConfigurationServing {
     func resolveAPIBaseURL() -> URL {
         AppRuntimeConfiguration.resolveAPIBaseURL()
+    }
+
+    func validateAPIBaseURL(_ rawValue: String) throws -> URL {
+        try AppRuntimeConfiguration.validateAPIBaseURL(rawValue)
     }
 
     func saveAPIBaseURLOverride(_ rawValue: String) throws -> URL {
@@ -52,7 +57,7 @@ enum AppRuntimeConfiguration {
         _ rawValue: String,
         userDefaults: UserDefaults = .standard
     ) throws -> URL {
-        let url = try validatedAPIBaseURL(rawValue)
+        let url = try validateAPIBaseURL(rawValue)
         userDefaults.set(url.absoluteString, forKey: apiBaseURLOverrideKey)
         return url
     }
@@ -70,7 +75,7 @@ enum AppRuntimeConfiguration {
         )
     }
 
-    private static func validatedAPIBaseURL(_ rawValue: String) throws -> URL {
+    static func validateAPIBaseURL(_ rawValue: String) throws -> URL {
         guard let url = normalizedAPIBaseURL(rawValue) else {
             throw AppRuntimeConfigurationError.invalidAPIBaseURL
         }

@@ -10,9 +10,12 @@ final class GoalSettingsViewModel: ObservableObject {
     @Published var aiPermissionEnabled = true
     @Published private(set) var isAuthorizing = false
     @Published private(set) var isSyncing = false
+    @Published private(set) var isCheckingAPIConnectivity = false
     @Published var apiBaseURLText = ""
     @Published private(set) var apiBaseURLStatus = ""
     @Published private(set) var apiBaseURLHasError = false
+    @Published private(set) var apiConnectivityStatus = ""
+    @Published private(set) var apiConnectivityHasError = false
 
     private let goalService: GoalServing
     private let authorizationService: HealthKitAuthorizationProviding
@@ -20,6 +23,7 @@ final class GoalSettingsViewModel: ObservableObject {
     private let syncCoordinator: WorkoutSyncCoordinating
     private let userID: UUID
     private let runtimeConfiguration: AppRuntimeConfigurationServing
+    private let apiHealthChecker: APIHealthChecking
 
     init(
         goalService: GoalServing,
@@ -27,7 +31,8 @@ final class GoalSettingsViewModel: ObservableObject {
         workoutReader: WorkoutImportReading,
         syncCoordinator: WorkoutSyncCoordinating,
         userID: UUID,
-        runtimeConfiguration: AppRuntimeConfigurationServing
+        runtimeConfiguration: AppRuntimeConfigurationServing,
+        apiHealthChecker: APIHealthChecking
     ) {
         self.goalService = goalService
         self.authorizationService = authorizationService
@@ -35,6 +40,7 @@ final class GoalSettingsViewModel: ObservableObject {
         self.syncCoordinator = syncCoordinator
         self.userID = userID
         self.runtimeConfiguration = runtimeConfiguration
+        self.apiHealthChecker = apiHealthChecker
     }
 
     func load() async {
@@ -48,6 +54,8 @@ final class GoalSettingsViewModel: ObservableObject {
         apiBaseURLText = runtimeConfiguration.resolveAPIBaseURL().absoluteString
         apiBaseURLStatus = ""
         apiBaseURLHasError = false
+        apiConnectivityStatus = ""
+        apiConnectivityHasError = false
     }
 
     func requestHealthKitAuthorization() async {
@@ -104,6 +112,24 @@ final class GoalSettingsViewModel: ObservableObject {
         apiBaseURLHasError = false
     }
 
+    func checkAPIConnectivity() async {
+        isCheckingAPIConnectivity = true
+        defer { isCheckingAPIConnectivity = false }
+
+        do {
+            let resolvedURL = try runtimeConfiguration.validateAPIBaseURL(apiBaseURLText)
+            try await apiHealthChecker.checkHealth(baseURL: resolvedURL)
+            apiConnectivityStatus = "API 连通正常"
+            apiConnectivityHasError = false
+        } catch AppRuntimeConfigurationError.invalidAPIBaseURL {
+            apiConnectivityStatus = "请输入有效的 http(s) API 地址"
+            apiConnectivityHasError = true
+        } catch {
+            apiConnectivityStatus = "无法连接到 API，请检查地址和服务状态"
+            apiConnectivityHasError = true
+        }
+    }
+
     func save() async {
         await goalService.updateGoal(
             GoalSettingsData(
@@ -120,6 +146,7 @@ final class GoalSettingsViewModel: ObservableObject {
 
 struct GoalSettingsView: View {
     @StateObject var viewModel: GoalSettingsViewModel
+    let reopenSetupGuide: () -> Void
 
     var body: some View {
         Form {
@@ -147,9 +174,22 @@ struct GoalSettingsView: View {
                 Button("保存 API 地址") {
                     Task { await viewModel.saveAPIBaseURL() }
                 }
+                Button(viewModel.isCheckingAPIConnectivity ? "检测中..." : "检测 API 连通性") {
+                    Task { await viewModel.checkAPIConnectivity() }
+                }
+                .disabled(viewModel.isCheckingAPIConnectivity)
                 Button("恢复默认地址") {
                     Task { await viewModel.resetAPIBaseURL() }
                 }
+                if !viewModel.apiConnectivityStatus.isEmpty {
+                    Text(viewModel.apiConnectivityStatus)
+                        .font(.footnote)
+                        .foregroundStyle(viewModel.apiConnectivityHasError ? .red : .secondary)
+                }
+                Button(action: reopenSetupGuide) {
+                    Label("重新打开首次引导", systemImage: "sparkles")
+                }
+                .accessibilityIdentifier("profile.reopenSetupGuide")
                 Toggle("允许 AI 分析", isOn: $viewModel.aiPermissionEnabled)
                 Button(viewModel.isAuthorizing ? "授权中..." : "请求 HealthKit 授权") {
                     Task { await viewModel.requestHealthKitAuthorization() }
