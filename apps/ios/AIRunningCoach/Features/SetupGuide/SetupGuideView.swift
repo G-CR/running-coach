@@ -31,6 +31,17 @@ struct SetupGuideView: View {
         var primaryActionTitle: String {
             self == .sync ? "完成引导" : "下一步"
         }
+
+        var requirementText: String? {
+            switch self {
+            case .healthKit:
+                return "完成 HealthKit 授权后，才能继续下一步。"
+            case .api:
+                return "只有 API 检测通过后，才能进入第 3 步。"
+            case .sync:
+                return nil
+            }
+        }
     }
 
     @ObservedObject var viewModel: GoalSettingsViewModel
@@ -52,6 +63,11 @@ struct SetupGuideView: View {
                         .font(.title2.bold())
                     Text(currentStep.description)
                         .foregroundStyle(.secondary)
+                    if let requirementText = currentStep.requirementText {
+                        Text(requirementText)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Group {
@@ -71,10 +87,14 @@ struct SetupGuideView: View {
                 Spacer()
 
                 HStack {
-                    Button("稍后完成", action: closeGuide)
-                        .accessibilityIdentifier("setup.guide.skip")
+                    if currentStep == .sync {
+                        Button("稍后同步", action: closeGuide)
+                            .accessibilityIdentifier("setup.guide.skip")
+                    }
                     Spacer()
                     Button(currentStep.primaryActionTitle, action: advance)
+                        .disabled(!canAdvance)
+                        .accessibilityIdentifier("setup.guide.primary")
                         .buttonStyle(.borderedProminent)
                 }
             }
@@ -110,10 +130,12 @@ struct SetupGuideView: View {
                 Button("保存 API 地址") {
                     Task { await viewModel.saveAPIBaseURL() }
                 }
+                .accessibilityIdentifier("setup.guide.api.save")
                 Button(viewModel.isCheckingAPIConnectivity ? "检测中..." : "检测 API 连通性") {
                     Task { await viewModel.checkAPIConnectivity() }
                 }
                 .disabled(viewModel.isCheckingAPIConnectivity)
+                .accessibilityIdentifier("setup.guide.api.check")
             }
             if !viewModel.apiBaseURLStatus.isEmpty {
                 Text(viewModel.apiBaseURLStatus)
@@ -135,6 +157,17 @@ struct SetupGuideView: View {
                 Task { await viewModel.syncRecentWorkouts() }
             }
             .disabled(viewModel.isSyncing)
+        }
+    }
+
+    private var canAdvance: Bool {
+        switch currentStep {
+        case .healthKit:
+            return viewModel.isHealthKitAuthorized
+        case .api:
+            return viewModel.isAPIConnectivityConfirmed
+        case .sync:
+            return true
         }
     }
 

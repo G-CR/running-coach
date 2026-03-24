@@ -45,6 +45,7 @@ final class GoalSettingsViewModelTests: XCTestCase {
 
         XCTAssertEqual(authorizationService.requestCallCount, 1)
         XCTAssertEqual(sut.healthKitStatus, HealthKitAuthorizationState.authorized.description)
+        XCTAssertTrue(sut.isHealthKitAuthorized)
     }
 
     func testSyncRecentWorkoutsRequiresAuthorization() async {
@@ -115,6 +116,7 @@ final class GoalSettingsViewModelTests: XCTestCase {
         XCTAssertEqual(runtimeConfiguration.savedValues, [" http://192.168.1.30:9000 "])
         XCTAssertEqual(sut.apiBaseURLText, "http://192.168.1.30:9000")
         XCTAssertEqual(sut.apiBaseURLStatus, "API 地址已更新")
+        XCTAssertFalse(sut.isAPIConnectivityConfirmed)
     }
 
     func testSaveAPIBaseURLShowsValidationError() async {
@@ -180,6 +182,7 @@ final class GoalSettingsViewModelTests: XCTestCase {
 
         XCTAssertEqual(healthChecker.checkedURLs, [URL(string: "http://192.168.1.30:9000")!])
         XCTAssertEqual(sut.apiConnectivityStatus, "API 连通正常")
+        XCTAssertTrue(sut.isAPIConnectivityConfirmed)
     }
 
     func testCheckAPIConnectivityRejectsInvalidAddress() async {
@@ -197,6 +200,7 @@ final class GoalSettingsViewModelTests: XCTestCase {
         await sut.checkAPIConnectivity()
 
         XCTAssertEqual(sut.apiConnectivityStatus, "请输入有效的 http(s) API 地址")
+        XCTAssertFalse(sut.isAPIConnectivityConfirmed)
     }
 
     func testCheckAPIConnectivityShowsConnectionFailure() async {
@@ -219,5 +223,27 @@ final class GoalSettingsViewModelTests: XCTestCase {
         await sut.checkAPIConnectivity()
 
         XCTAssertEqual(sut.apiConnectivityStatus, "无法连接到 API，请检查地址和服务状态")
+        XCTAssertFalse(sut.isAPIConnectivityConfirmed)
+    }
+
+    func testEditingAPIAddressClearsConfirmedConnectivity() async {
+        let healthChecker = APIHealthCheckerStub()
+        let sut = GoalSettingsViewModel(
+            goalService: GoalServiceStub(),
+            authorizationService: HealthKitAuthorizationServiceStub(),
+            workoutReader: WorkoutImportReaderStub(result: .success([])),
+            syncCoordinator: WorkoutSyncCoordinatorSpy(),
+            userID: UUID(uuidString: "00000000-0000-0000-0000-000000000123")!,
+            runtimeConfiguration: AppRuntimeConfigurationServiceStub(),
+            apiHealthChecker: healthChecker
+        )
+        sut.apiBaseURLText = "http://192.168.1.30:9000"
+
+        await sut.checkAPIConnectivity()
+        XCTAssertTrue(sut.isAPIConnectivityConfirmed)
+
+        sut.apiBaseURLText = "http://192.168.1.31:9000"
+
+        XCTAssertFalse(sut.isAPIConnectivityConfirmed)
     }
 }

@@ -11,11 +11,18 @@ final class GoalSettingsViewModel: ObservableObject {
     @Published private(set) var isAuthorizing = false
     @Published private(set) var isSyncing = false
     @Published private(set) var isCheckingAPIConnectivity = false
-    @Published var apiBaseURLText = ""
+    @Published var apiBaseURLText = "" {
+        didSet {
+            if apiBaseURLText != lastSuccessfulAPIHealthCheckURL {
+                isAPIConnectivityConfirmed = false
+            }
+        }
+    }
     @Published private(set) var apiBaseURLStatus = ""
     @Published private(set) var apiBaseURLHasError = false
     @Published private(set) var apiConnectivityStatus = ""
     @Published private(set) var apiConnectivityHasError = false
+    @Published private(set) var isAPIConnectivityConfirmed = false
 
     private let goalService: GoalServing
     private let authorizationService: HealthKitAuthorizationProviding
@@ -24,6 +31,7 @@ final class GoalSettingsViewModel: ObservableObject {
     private let userID: UUID
     private let runtimeConfiguration: AppRuntimeConfigurationServing
     private let apiHealthChecker: APIHealthChecking
+    private var lastSuccessfulAPIHealthCheckURL: String?
 
     init(
         goalService: GoalServing,
@@ -56,6 +64,8 @@ final class GoalSettingsViewModel: ObservableObject {
         apiBaseURLHasError = false
         apiConnectivityStatus = ""
         apiConnectivityHasError = false
+        isAPIConnectivityConfirmed = false
+        lastSuccessfulAPIHealthCheckURL = nil
     }
 
     func requestHealthKitAuthorization() async {
@@ -96,6 +106,8 @@ final class GoalSettingsViewModel: ObservableObject {
             apiBaseURLText = resolvedURL.absoluteString
             apiBaseURLStatus = "API 地址已更新"
             apiBaseURLHasError = false
+            isAPIConnectivityConfirmed = false
+            lastSuccessfulAPIHealthCheckURL = nil
         } catch AppRuntimeConfigurationError.invalidAPIBaseURL {
             apiBaseURLStatus = "请输入有效的 http(s) API 地址"
             apiBaseURLHasError = true
@@ -110,6 +122,8 @@ final class GoalSettingsViewModel: ObservableObject {
         apiBaseURLText = resolvedURL.absoluteString
         apiBaseURLStatus = "已恢复默认 API 地址"
         apiBaseURLHasError = false
+        isAPIConnectivityConfirmed = false
+        lastSuccessfulAPIHealthCheckURL = nil
     }
 
     func checkAPIConnectivity() async {
@@ -121,13 +135,21 @@ final class GoalSettingsViewModel: ObservableObject {
             try await apiHealthChecker.checkHealth(baseURL: resolvedURL)
             apiConnectivityStatus = "API 连通正常"
             apiConnectivityHasError = false
+            isAPIConnectivityConfirmed = true
+            lastSuccessfulAPIHealthCheckURL = resolvedURL.absoluteString
         } catch AppRuntimeConfigurationError.invalidAPIBaseURL {
             apiConnectivityStatus = "请输入有效的 http(s) API 地址"
             apiConnectivityHasError = true
+            isAPIConnectivityConfirmed = false
         } catch {
             apiConnectivityStatus = "无法连接到 API，请检查地址和服务状态"
             apiConnectivityHasError = true
+            isAPIConnectivityConfirmed = false
         }
+    }
+
+    var isHealthKitAuthorized: Bool {
+        authorizationService.currentStatus() == .authorized
     }
 
     func save() async {

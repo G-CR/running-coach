@@ -11,13 +11,24 @@ protocol APIHealthChecking: Sendable {
 }
 
 final class APIHealthCheckService: APIHealthChecking, @unchecked Sendable {
-    private let session: URLSessioning
+    static let mockHealthyLaunchArgument = "UITest.MockAPIHealthy"
 
-    init(session: URLSessioning = URLSession.shared) {
+    private let session: URLSessioning
+    private let launchArguments: [String]
+
+    init(
+        session: URLSessioning = URLSession.shared,
+        launchArguments: [String] = ProcessInfo.processInfo.arguments
+    ) {
         self.session = session
+        self.launchArguments = launchArguments
     }
 
     func checkHealth(baseURL: URL) async throws {
+        if launchArguments.contains(Self.mockHealthyLaunchArgument) {
+            return
+        }
+
         let request = URLRequest(url: baseURL.appending(path: "health"))
 
         let data: Data

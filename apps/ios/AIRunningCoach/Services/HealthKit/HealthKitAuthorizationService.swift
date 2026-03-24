@@ -27,14 +27,20 @@ protocol HealthKitAuthorizationProviding: Sendable {
 }
 
 final class HealthKitAuthorizationService: HealthKitAuthorizationProviding, @unchecked Sendable {
-    private static let authorizationFlagKey = "healthkit_read_authorized"
+    static let authorizationFlagKey = "healthkit_read_authorized"
+    static let mockAuthorizedLaunchArgument = "UITest.MockHealthKitAuthorized"
 
     private let healthStore: HKHealthStore
     private let userDefaults: UserDefaults
 
-    init(healthStore: HKHealthStore = HKHealthStore(), userDefaults: UserDefaults = .standard) {
+    init(
+        healthStore: HKHealthStore = HKHealthStore(),
+        userDefaults: UserDefaults = .standard,
+        launchArguments: [String] = ProcessInfo.processInfo.arguments
+    ) {
         self.healthStore = healthStore
         self.userDefaults = userDefaults
+        Self.applyLaunchArguments(launchArguments, userDefaults: userDefaults)
     }
 
     func currentStatus() -> HealthKitAuthorizationState {
@@ -73,5 +79,11 @@ final class HealthKitAuthorizationService: HealthKitAuthorizationProviding, @unc
             types.insert(stepCount)
         }
         return types
+    }
+
+    private static func applyLaunchArguments(_ launchArguments: [String], userDefaults: UserDefaults) {
+        if launchArguments.contains(mockAuthorizedLaunchArgument) {
+            userDefaults.set(true, forKey: authorizationFlagKey)
+        }
     }
 }

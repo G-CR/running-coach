@@ -1,13 +1,14 @@
 import XCTest
 
 final class MVPFlowUITests: XCTestCase {
-    func testSetupGuideCanBeSkippedAndReopenedFromProfile() {
+    func testSetupGuideRequiresKeyStepsBeforeStepThree() {
         let app = XCUIApplication()
-        app.launchArguments += ["UITest.ResetSetupGuide"]
+        app.launchArguments += [
+            "UITest.SkipSetupGuide",
+            "UITest.MockHealthKitAuthorized",
+            "UITest.MockAPIHealthy",
+        ]
         app.launch()
-
-        XCTAssertTrue(app.staticTexts["setup.guide.title"].waitForExistence(timeout: 5))
-        app.buttons["setup.guide.skip"].tap()
 
         XCTAssertTrue(app.staticTexts["home.nextWorkout.title"].waitForExistence(timeout: 5))
 
@@ -25,6 +26,18 @@ final class MVPFlowUITests: XCTestCase {
         }
 
         XCTAssertTrue(app.staticTexts["setup.guide.title"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["setup.guide.primary"].isEnabled)
+
+        app.buttons["setup.guide.primary"].tap()
+        XCTAssertTrue(app.staticTexts["检查 API"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["setup.guide.primary"].isEnabled)
+
+        app.buttons["setup.guide.api.check"].tap()
+        XCTAssertTrue(app.staticTexts["API 连通正常"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["setup.guide.primary"].isEnabled)
+
+        app.buttons["setup.guide.primary"].tap()
+        XCTAssertTrue(app.staticTexts["首次同步"].waitForExistence(timeout: 5))
     }
 
     func testMainFlowShowsNextWorkoutAndLetsUserSubmitFeedback() {
