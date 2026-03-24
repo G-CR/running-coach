@@ -38,6 +38,14 @@ final class MVPFlowUITests: XCTestCase {
 
         app.buttons["setup.guide.primary"].tap()
         XCTAssertTrue(app.staticTexts["首次同步"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["setup.guide.primary"].isEnabled)
+        XCTAssertFalse(app.buttons["setup.guide.skip"].exists)
+
+        app.buttons["setup.guide.sync.action"].tap()
+        let primaryEnabled = NSPredicate(format: "isEnabled == true")
+        expectation(for: primaryEnabled, evaluatedWith: app.buttons["setup.guide.primary"])
+        waitForExpectations(timeout: 5)
+        XCTAssertTrue(app.buttons["setup.guide.skip"].waitForExistence(timeout: 5))
     }
 
     func testMainFlowShowsNextWorkoutAndLetsUserSubmitFeedback() {

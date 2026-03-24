@@ -1,5 +1,12 @@
 import SwiftUI
 
+private enum WorkoutSyncStatusText {
+    static let authorizationRequired = "请先完成 HealthKit 授权"
+    static let noNewWorkouts = "无新训练"
+    static let success = "同步成功"
+    static let retryNeeded = "同步失败待重试"
+}
+
 @MainActor
 final class GoalSettingsViewModel: ObservableObject {
     @Published var goalType = ""
@@ -11,6 +18,7 @@ final class GoalSettingsViewModel: ObservableObject {
     @Published private(set) var isAuthorizing = false
     @Published private(set) var isSyncing = false
     @Published private(set) var isCheckingAPIConnectivity = false
+    @Published private(set) var hasAttemptedInitialSync = false
     @Published var apiBaseURLText = "" {
         didSet {
             if apiBaseURLText != lastSuccessfulAPIHealthCheckURL {
@@ -65,6 +73,7 @@ final class GoalSettingsViewModel: ObservableObject {
         apiConnectivityStatus = ""
         apiConnectivityHasError = false
         isAPIConnectivityConfirmed = false
+        hasAttemptedInitialSync = false
         lastSuccessfulAPIHealthCheckURL = nil
     }
 
@@ -81,8 +90,10 @@ final class GoalSettingsViewModel: ObservableObject {
     }
 
     func syncRecentWorkouts() async {
+        hasAttemptedInitialSync = true
+
         guard authorizationService.currentStatus() == .authorized else {
-            syncStatus = "请先完成 HealthKit 授权"
+            syncStatus = WorkoutSyncStatusText.authorizationRequired
             return
         }
 
@@ -94,9 +105,9 @@ final class GoalSettingsViewModel: ObservableObject {
             for workout in workouts {
                 try await syncCoordinator.sync(workout: workout)
             }
-            syncStatus = workouts.isEmpty ? "没有发现新的跑步训练" : "已同步 \(workouts.count) 条跑步训练"
+            syncStatus = workouts.isEmpty ? WorkoutSyncStatusText.noNewWorkouts : WorkoutSyncStatusText.success
         } catch {
-            syncStatus = "同步失败，请检查 API 地址和本地服务"
+            syncStatus = WorkoutSyncStatusText.retryNeeded
         }
     }
 

@@ -95,7 +95,7 @@ final class DemoAppStore {
                 targetText: "50:00 target time",
                 weeklyRunDays: 4,
                 healthKitStatus: "Authorized",
-                syncStatus: "Up to date",
+                syncStatus: "尚未同步",
                 aiPermissionEnabled: true
             )
         )

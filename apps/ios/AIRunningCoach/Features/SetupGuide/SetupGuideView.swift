@@ -39,7 +39,7 @@ struct SetupGuideView: View {
             case .api:
                 return "只有 API 检测通过后，才能进入第 3 步。"
             case .sync:
-                return nil
+                return "至少完成一次同步尝试后，才能结束引导。"
             }
         }
     }
@@ -87,7 +87,7 @@ struct SetupGuideView: View {
                 Spacer()
 
                 HStack {
-                    if currentStep == .sync {
+                    if currentStep == .sync && viewModel.hasAttemptedInitialSync {
                         Button("稍后同步", action: closeGuide)
                             .accessibilityIdentifier("setup.guide.skip")
                     }
@@ -153,10 +153,12 @@ struct SetupGuideView: View {
     private var syncStep: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("同步状态：\(viewModel.syncStatus)")
+                .accessibilityIdentifier("setup.guide.sync.status")
             Button(viewModel.isSyncing ? "同步中..." : "同步最近跑步") {
                 Task { await viewModel.syncRecentWorkouts() }
             }
             .disabled(viewModel.isSyncing)
+            .accessibilityIdentifier("setup.guide.sync.action")
         }
     }
 
@@ -167,7 +169,7 @@ struct SetupGuideView: View {
         case .api:
             return viewModel.isAPIConnectivityConfirmed
         case .sync:
-            return true
+            return viewModel.hasAttemptedInitialSync
         }
     }
 

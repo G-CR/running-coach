@@ -64,6 +64,7 @@ final class GoalSettingsViewModelTests: XCTestCase {
 
         await sut.syncRecentWorkouts()
 
+        XCTAssertTrue(sut.hasAttemptedInitialSync)
         XCTAssertEqual(sut.syncStatus, "请先完成 HealthKit 授权")
         XCTAssertTrue(syncCoordinator.syncedWorkouts.isEmpty)
     }
@@ -92,8 +93,76 @@ final class GoalSettingsViewModelTests: XCTestCase {
 
         await sut.syncRecentWorkouts()
 
+        XCTAssertTrue(sut.hasAttemptedInitialSync)
         XCTAssertEqual(syncCoordinator.syncedWorkouts.count, 2)
-        XCTAssertEqual(sut.syncStatus, "已同步 2 条跑步训练")
+        XCTAssertEqual(sut.syncStatus, "同步成功")
+    }
+
+    func testSyncRecentWorkoutsShowsNoNewTrainingWhenImportIsEmpty() async {
+        let goalService = GoalServiceStub()
+        let authorizationService = HealthKitAuthorizationServiceStub(currentStatusValue: .authorized)
+        let syncCoordinator = WorkoutSyncCoordinatorSpy()
+        let sut = GoalSettingsViewModel(
+            goalService: goalService,
+            authorizationService: authorizationService,
+            workoutReader: WorkoutImportReaderStub(result: .success([])),
+            syncCoordinator: syncCoordinator,
+            userID: UUID(uuidString: "00000000-0000-0000-0000-000000000123")!,
+            runtimeConfiguration: AppRuntimeConfigurationServiceStub(),
+            apiHealthChecker: APIHealthCheckerStub()
+        )
+
+        await sut.syncRecentWorkouts()
+
+        XCTAssertTrue(sut.hasAttemptedInitialSync)
+        XCTAssertTrue(syncCoordinator.syncedWorkouts.isEmpty)
+        XCTAssertEqual(sut.syncStatus, "无新训练")
+    }
+
+    func testSyncRecentWorkoutsShowsRetryStateWhenSyncFails() async {
+        enum SampleError: Error {
+            case offline
+        }
+
+        let goalService = GoalServiceStub()
+        let authorizationService = HealthKitAuthorizationServiceStub(currentStatusValue: .authorized)
+        let syncCoordinator = WorkoutSyncCoordinatorSpy()
+        let sut = GoalSettingsViewModel(
+            goalService: goalService,
+            authorizationService: authorizationService,
+            workoutReader: WorkoutImportReaderStub(result: .failure(SampleError.offline)),
+            syncCoordinator: syncCoordinator,
+            userID: UUID(uuidString: "00000000-0000-0000-0000-000000000123")!,
+            runtimeConfiguration: AppRuntimeConfigurationServiceStub(),
+            apiHealthChecker: APIHealthCheckerStub()
+        )
+
+        await sut.syncRecentWorkouts()
+
+        XCTAssertTrue(sut.hasAttemptedInitialSync)
+        XCTAssertTrue(syncCoordinator.syncedWorkouts.isEmpty)
+        XCTAssertEqual(sut.syncStatus, "同步失败待重试")
+    }
+
+    func testLoadResetsInitialSyncAttemptState() async {
+        let goalService = GoalServiceStub()
+        let authorizationService = HealthKitAuthorizationServiceStub(currentStatusValue: .authorized)
+        let sut = GoalSettingsViewModel(
+            goalService: goalService,
+            authorizationService: authorizationService,
+            workoutReader: WorkoutImportReaderStub(result: .success([])),
+            syncCoordinator: WorkoutSyncCoordinatorSpy(),
+            userID: UUID(uuidString: "00000000-0000-0000-0000-000000000123")!,
+            runtimeConfiguration: AppRuntimeConfigurationServiceStub(),
+            apiHealthChecker: APIHealthCheckerStub()
+        )
+
+        await sut.syncRecentWorkouts()
+        XCTAssertTrue(sut.hasAttemptedInitialSync)
+
+        await sut.load()
+
+        XCTAssertFalse(sut.hasAttemptedInitialSync)
     }
 
     func testSaveAPIBaseURLPersistsEditableValue() async {
